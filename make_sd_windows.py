@@ -11,6 +11,7 @@ README.md and tools/) and run it from there. It changes nothing in the release.
 
 options: --out DIR            where the SD card folder goes (default build\\sd)
          --jobs N             parallel compiles (each can need ~1.5 GB of RAM; default: half the CPUs)
+         --strict             stop (not just warn) if the release is not one this script was tested with
          --reuse-translation  keep build\\gen from an earlier run instead of translating the game code again
 
 Steps: extract the game, check it is version 0 of the USA game, translate the PowerPC code to C
@@ -35,6 +36,17 @@ sys.dont_write_bytecode = True
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DKP = os.environ.get("DEVKITPRO_WIN", "C:/devkitPro")
 TITLE = "0005000010143500"
+
+# SHA-256 (line endings normalized to LF) of the release files this script depends on, per release it was
+# tested with. To add a release: build with it, then add its hashes (python make_sd_windows.py --print-hashes).
+TESTED = {
+    "v0.2.0": {
+        "tools/installer/setup.py": "00055121872d73ebf6926ab81fef41a359b03af81bd78e5b08986cebf8b1363b",
+        "tools/recomp/recomp.py": "a4cd7c8472a6ab56b75f0b0d911c959adec5e5dd7837b7ab6fe3f8f3cb6f8704",
+        "CMakeLists.txt": "b55370431c2b0049a84496e1eeef54a3a997dd95277cf7142cc3133327a5bac3",
+        "tools/switch/build.sh": "0a61bd3704933181929918f3bd2262bea478a99f7049e41d3fe60e4d2d07ab57",
+    },
+}
 
 
 def fail(msg):
@@ -194,6 +206,34 @@ def extract_wua(archive, dst):
 # steps
 
 
+def release_hashes():
+    out = {}
+    for rel in TESTED["v0.2.0"]:
+        try:
+            with open(os.path.join(ROOT, *rel.split("/")), "rb") as f:
+                out[rel] = hashlib.sha256(f.read().replace(bytes([13, 10]), bytes([10]))).hexdigest()
+        except OSError:
+            out[rel] = None
+    return out
+
+
+def check_release(strict):
+    """Warns (or stops with --strict) when the release differs from every release this script was tested with."""
+    got = release_hashes()
+    for ver, want in TESTED.items():
+        if got == want:
+            print("  release files match %s, which this script was tested with" % ver)
+            return
+    best = max(TESTED, key=lambda v: sum(got[k] == h for k, h in TESTED[v].items()))
+    changed = [k for k, h in TESTED[best].items() if got[k] != h]
+    msg = ("this release differs from the tested %s (changed: %s). The build may fail. If it does, look for an "
+           "updated make_sd_windows.py at https://github.com/digdat0/SwitchWakerHD-windows-native-build"
+           % (best, ", ".join(changed)))
+    if strict:
+        fail(msg)
+    print("  WARNING: " + msg, flush=True)
+
+
 def check_devkitpro():
     need = {
         "devkitA64 compiler": DKP + "/devkitA64/bin/aarch64-none-elf-gcc.exe",
@@ -214,18 +254,25 @@ def check_devkitpro():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    src = ap.add_mutually_exclusive_group(required=True)
+    src = ap.add_mutually_exclusive_group()
     src.add_argument("--wua", help="a Cemu Wii U archive (.wua), no keys needed")
     src.add_argument("--image", help="a disc image (.wux/.wud), with GAME.key and common.key")
     src.add_argument("--game-dir", help="an extracted game folder (code/, content/, meta/)")
     ap.add_argument("--out", default=os.path.join(ROOT, "build", "sd"))
     ap.add_argument("--jobs", type=int)
     ap.add_argument("--reuse-translation", action="store_true")
+    ap.add_argument("--strict", action="store_true", help="stop, not just warn, if the release is not a tested one")
+    ap.add_argument("--print-hashes", action="store_true", help="print this release's file hashes and exit")
     args = ap.parse_args()
+    if args.print_hashes:
+        for k, v in release_hashes().items():
+            print('        "%s": "%s",' % (k, v))
+        return
 
     if not os.path.isfile(os.path.join(ROOT, "tools", "recomp", "recomp.py")):
         fail("put this file in the unzipped SwitchWakerHD release folder (the one with tools\\ and README.md)")
     check_devkitpro()
+    check_release(args.strict)
     sys.path.insert(0, os.path.join(ROOT, "tools", "installer"))
     import setup  # the release's own game checks
 

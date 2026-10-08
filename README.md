@@ -59,8 +59,12 @@ python make_sd_windows.py --image C:\path\to\game.wux
 python make_sd_windows.py --game-dir C:\path\to\10143500
 ```
 
+On start the script hashes the release files it depends on (`setup.py`, `recomp.py`, `CMakeLists.txt`,
+`build.sh`) and compares them with the release it was tested with (currently **v0.2.0**). If they differ it prints
+a warning and carries on, since the change may be harmless; `--strict` stops instead.
+
 Options: `--jobs 2` if the PC runs out of memory (each compile can need ~1.5 GB), `--out DIR` for the output
-folder, `--reuse-translation` to skip translating the game code again after a first run.
+folder, `--reuse-translation` to skip translating the game code again after a first run, `--strict` as above.
 
 It extracts the game, checks it is the right version, translates the game code (a few minutes), then compiles
 (10 to 30 minutes the first time). At the end, `build\sd\` holds:
@@ -86,6 +90,12 @@ mode, then pick SwitchWakerHD. Controls and settings are in the release's own `I
 | `not the expected file` / version error | The dump is not version 0 of the USA game, or the update was merged in |
 | The compile fails with out-of-memory errors | Run again with `--jobs 2` |
 | Something else | Run again and read the first error above `make_sd_windows: this step failed` |
+
+## When the SwitchWakerHD release changes
+
+If the warning above appears and the build fails, check this repo for a newer `make_sd_windows.py`. To add a new
+release that works: build with it, run `python make_sd_windows.py --print-hashes` in its folder, and add the
+printed lines as a new entry in the `TESTED` table at the top of the script.
 
 ## How it differs from the release's own build
 
