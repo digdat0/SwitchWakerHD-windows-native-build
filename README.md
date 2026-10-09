@@ -104,8 +104,9 @@ its build. `make_sd_windows.py` runs it **after the game has built**.
   `wwhd.nro` must stay at `sdmc:/switch/wwhd/wwhd.nro`.
 - Run it alone later with `python make_forwarder_windows.py --sd build\sd`.
 
-Status: the `.nsp` builds and is a valid container, but it has **not been verified with `hactool` and has not been
-tested on a console**. If you try it, please report what happens.
+Status: tested on a Switch by the author of this repo, with the game built by `make_sd_windows.py` from SwitchWakerHD
+v0.3.0. The `.nsp` has not been checked offline with `hactool`. If something goes wrong on your console, please open
+an issue with your firmware and Atmosphère versions.
 
 If `hacBrewPack` says `Key (...) must be 32 hex digits`, a key in your `prod.keys` is not in the format it expects
 (some key dumps have longer `master_kek_source_*` entries). Use keys from a current Lockpick_RCM dump.

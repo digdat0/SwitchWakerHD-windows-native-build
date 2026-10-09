@@ -206,7 +206,7 @@ cd "$(cygpath -u "$HBP")" && cp config.mk.template config.mk && (make -s >/dev/n
     print("""
 Done: %s (%d bytes), title ID 0x%s, "%s" %s
 %sInstall it with DBI (Browse SD card > the .nsp > Install) or Goldleaf; it needs current Atmosphere sigpatches.
-The NRO must stay at %s. (Not verified with hactool; the HOME icon was not tested on a console.)"""
+The NRO must stay at %s. (The NSP has not been checked with hactool.)"""
           % (final, os.path.getsize(final), TITLE_ID, NAME, version,
              "Also copied to %s\\NSP\\.\n" % os.path.abspath(args.sd) if args.sd else "", NRO_PATH))
 
