@@ -15,7 +15,7 @@ This repo contains no SwitchWakerHD code and no game files. You bring both:
 
 What gets built contains the game, so it is for your own console only. Do not share it.
 
-Tested on Windows 10 with SwitchWakerHD v0.2.0.
+Tested on Windows 10 with SwitchWakerHD v0.2.0 and v0.3.0.
 
 ## 1. One-time setup
 
@@ -60,7 +60,7 @@ python make_sd_windows.py --game-dir C:\path\to\10143500
 ```
 
 On start the script hashes the release files it depends on (`setup.py`, `recomp.py`, `CMakeLists.txt`,
-`build.sh`) and compares them with the release it was tested with (currently **v0.2.0**). If they differ it prints
+`build.sh`) and compares them with the release it was tested with (currently **v0.2.0** and **v0.3.0**). If they differ it prints
 a warning and carries on, since the change may be harmless; `--strict` stops instead.
 
 Options: `--jobs 2` if the PC runs out of memory (each compile can need ~1.5 GB), `--out DIR` for the output

@@ -46,6 +46,12 @@ TESTED = {
         "CMakeLists.txt": "b55370431c2b0049a84496e1eeef54a3a997dd95277cf7142cc3133327a5bac3",
         "tools/switch/build.sh": "0a61bd3704933181929918f3bd2262bea478a99f7049e41d3fe60e4d2d07ab57",
     },
+    "v0.3.0": {
+        "tools/installer/setup.py": "c41f9062a086b353ae2c5a2b725d6a188649de09c6c6d0f0d51a67f532039bbb",
+        "tools/recomp/recomp.py": "78a53285a89af941156c53144a66d8beb3031bb30888aacf5193e321bd506e40",
+        "CMakeLists.txt": "c9ad14b37935008f0c0e9d19369a3e7062279be0de2f4cbfa06b4baedc743992",
+        "tools/switch/build.sh": "0a61bd3704933181929918f3bd2262bea478a99f7049e41d3fe60e4d2d07ab57",
+    },
 }
 
 
@@ -208,7 +214,7 @@ def extract_wua(archive, dst):
 
 def release_hashes():
     out = {}
-    for rel in TESTED["v0.2.0"]:
+    for rel in next(iter(TESTED.values())):
         try:
             with open(os.path.join(ROOT, *rel.split("/")), "rb") as f:
                 out[rel] = hashlib.sha256(f.read().replace(bytes([13, 10]), bytes([10]))).hexdigest()
