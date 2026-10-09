@@ -101,10 +101,11 @@ HOME screen and starts the game in title mode, so you do not have to hold R (the
 `tools\switch\forwarder\INSTALL.md` describes it). `make_forwarder_windows.py` is the Windows, no-Docker version of
 its build. `make_sd_windows.py` runs it **after the game has built**.
 
-- It needs **your own console's `prod.keys`** (dump them with Lockpick_RCM). Put the file named `prod.keys` in the
-  folder you run `make_sd_windows.py` from, or pass `--keys "D:\path\prod.keys"`. The keys are only read by path;
-  they are never copied, and the output is checked so that no key value is printed. Keep the file out of anything
-  you share: `.gitignore` here blocks `prod.keys`, `*.keys` and `*.nsp`.
+- It needs **your own console's `prod.keys`** (dump them with Lockpick_RCM). Put the file at
+  `%USERPROFILE%\.switch\prod.keys`, or pass `--keys "D:\path\prod.keys"`. **Keep it outside the release folder**: the
+  script refuses keys inside it, because an unzipped release is not a Git repo and that folder is easy to zip or share
+  by mistake. The keys are only read by path; they are never copied, and the output is checked so that no key value
+  is printed. (`.gitignore` here also blocks `prod.keys`, `*.keys` and `*.nsp`.)
 - **Without keys it is skipped** with a short note, and the game (`wwhd.nro`) is built as usual. `--no-forwarder`
   skips it always.
 - It needs Git, Pillow and `gcc` in MSYS2 (setup step 4). It fetches `nx-hbloader` and `hacBrewPack` from GitHub at
@@ -112,7 +113,8 @@ its build. `make_sd_windows.py` runs it **after the game has built**.
 - With keys, the `.nsp` is also copied to `build\sd\NSP\`. Install it on the Switch with DBI (*Browse SD card*, the
   `.nsp`, *Install*) or Goldleaf, and delete the file afterwards. It needs up-to-date Atmosphere sigpatches, and
   `wwhd.nro` must stay at `sdmc:/switch/wwhd/wwhd.nro`.
-- Run it alone later with `python make_forwarder_windows.py --sd build\sd`.
+- Run it alone later with `python make_forwarder_windows.py --sd build\sd`. `WWHD_FORWARDER_TITLE_ID` overrides the
+  title ID, as in the release's own `build_forwarder.sh`.
 
 Status: tested on a Switch by the author of this repo, with the game built by `make_sd_windows.py` from SwitchWakerHD
 v0.3.0. The `.nsp` has not been checked offline with `hactool`. If something goes wrong on your console, please open
@@ -130,6 +132,8 @@ If `hacBrewPack` says `Key (...) must be 32 hex digits`, a key in your `prod.key
 | `not the expected file` / version error | The dump is not version 0 of the USA game, or the update was merged in |
 | The compile fails with out-of-memory errors | Run again with `--jobs 2` |
 | `skipped: no prod.keys at ...` | Normal without keys. See "HOME-screen icon" to add them |
+| `keep prod.keys outside the release folder` | Move the file to `%USERPROFILE%\.switch\prod.keys` (or anywhere else outside the release folder) |
+| `unsafe file name in the archive` | The `.wua` contains a file name that would write outside the output folder. Do not use that archive |
 | `WARNING: the forwarder was not built` | Only the icon failed; `wwhd.nro` and `build\sd` are fine. Read the lines above it |
 | Something else | Run again and read the first error above `make_sd_windows: this step failed` |
 

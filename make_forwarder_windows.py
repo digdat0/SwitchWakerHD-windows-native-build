@@ -8,10 +8,11 @@ build_forwarder.sh. make_sd_windows.py runs it after a successful build; it can 
 
   python make_forwarder_windows.py [--keys C:\\path\\prod.keys] [--sd build\\sd]
 
-Needs your own console's prod.keys (dump them with Lockpick_RCM): by default a file named prod.keys in the
-folder you run this from, or --keys PATH. Without keys nothing is built and the script exits with code 3;
-the game itself (wwhd.nro) does not need them. The keys are only passed by path to hacBrewPack for the
-pack step: they are never copied, and the output is checked so that no key value is printed.
+Needs your own console's prod.keys (dump them with Lockpick_RCM): by default %USERPROFILE%\\.switch\\prod.keys,
+or --keys PATH. Like build_forwarder.sh it refuses keys inside the release folder (easy to zip or share by
+mistake). Without keys nothing is built and the script exits with code 3; the game itself (wwhd.nro) does not
+need them. The keys are only passed by path to hacBrewPack for the pack step: they are never copied, and the
+output is checked so that no key value is printed.
 
 Needs (besides what make_sd_windows.py needs): git, Pillow (pip install pillow), and gcc in devkitPro's
 MSYS2 (open devkitPro > MSYS2, then: pacman -S gcc). Output: build\\forwarder\\wwhd_forwarder.nsp, and with
@@ -32,7 +33,8 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 DKP = os.environ.get("DEVKITPRO_WIN", "C:/devkitPro")
 EXIT_NO_KEYS = 3
 
-TITLE_ID = "01ff575748440000"  # "01FF" is outside retail ranges, "57574844" is ASCII "WWHD"
+# "01FF" is outside retail ranges, "57574844" is ASCII "WWHD"; the same override as build_forwarder.sh
+TITLE_ID = re.sub(r"^0[xX]", "", os.environ.get("WWHD_FORWARDER_TITLE_ID", "01ff575748440000")).lower()
 NRO_PATH = "sdmc:/switch/wwhd/wwhd.nro"
 NAME, PUBLISHER = "Wind Waker HD", "SwitchWakerHD"
 HBLOADER = ("https://github.com/switchbrew/nx-hbloader.git", "82b95122c5ae8dc059bf23893ba7623c72c86773")  # v2.4.5
@@ -94,18 +96,21 @@ def fetch(dst, url, rev):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--keys", help="your console's prod.keys (default: prod.keys in the current folder)")
+    ap.add_argument("--keys", help="your console's prod.keys, outside the release folder (default: .switch\\prod.keys "
+                    "in your user folder)")
     ap.add_argument("--icon", help="the game's iconTex.tga (default: from the extracted game in build\\)")
     ap.add_argument("--sd", help="also copy the NSP into DIR\\NSP\\ (the SD card folder make_sd_windows.py made)")
     ap.add_argument("--version", help="the version shown on the HOME screen (default: from the folder name)")
     args = ap.parse_args()
 
-    keys = os.path.abspath(args.keys or os.path.join(os.getcwd(), "prod.keys"))
+    keys = os.path.abspath(args.keys or os.path.join(os.path.expanduser("~"), ".switch", "prod.keys"))
     if not os.path.isfile(keys):
         print("No prod.keys found at %s: the HOME-screen forwarder (.nsp) is skipped.\n"
-              "The game itself does not need it. To build the forwarder, put your console's prod.keys in the\n"
-              "folder you run this from, or pass --keys PATH." % keys, flush=True)
+              "The game itself does not need it. To build the forwarder, put your console's prod.keys there,\n"
+              "or pass --keys PATH (outside the release folder)." % keys, flush=True)
         sys.exit(EXIT_NO_KEYS)
+    if os.path.normcase(os.path.realpath(keys)).startswith(os.path.normcase(os.path.realpath(ROOT)) + os.sep):
+        fail("keep prod.keys outside the release folder (%s): it is easy to zip or share it with the build by mistake" % ROOT)
     secrets = key_values(keys)
 
     fdir = os.path.join(ROOT, "tools", "switch", "forwarder")

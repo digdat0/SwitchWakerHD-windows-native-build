@@ -12,7 +12,8 @@ README.md and tools/) and run it from there. It changes nothing in the release.
 options: --out DIR            where the SD card folder goes (default build\\sd)
          --jobs N             parallel compiles (each can need ~1.5 GB of RAM; default: half the CPUs)
          --keys PATH          your console's prod.keys, to also build the HOME-screen forwarder (.nsp);
-                              default: prod.keys in the folder you run this from; without it that step is skipped
+                              default: %USERPROFILE%\\.switch\\prod.keys, never inside this folder; without it
+                              that step is skipped
          --no-forwarder       never build the forwarder
          --strict             stop (not just warn) if the release is not one this script was tested with
          --reuse-translation  keep build\\gen from an earlier run instead of translating the game code again
@@ -206,7 +207,15 @@ def extract_wua(archive, dst):
     files = list(z.walk(t[3]))
     print("  extracting %s (%d files) ..." % (t[2], len(files)), flush=True)
     for i, (p, c) in enumerate(files):
-        z.write_file(c, os.path.join(dst, *p.split("/")))
+        # names come from the archive: keep every file under dst (`..`, `\` or a drive letter would escape it)
+        parts = p.split("/")
+        if any(n in ("", ".", "..") or "\\" in n or ":" in n for n in parts):
+            fail("unsafe file name in the archive: %r" % p)
+        target = os.path.join(dst, *parts)
+        root = os.path.realpath(dst)
+        if os.path.commonpath([root, os.path.realpath(target)]) != root:
+            fail("unsafe file name in the archive: %r" % p)
+        z.write_file(c, target)
         if i % 250 == 0:
             print("    %d/%d" % (i, len(files)), flush=True)
 
@@ -267,13 +276,13 @@ def forwarder(args, out):
         return
     print("\n[+] HOME-screen forwarder (optional)", flush=True)
     script = os.path.join(ROOT, "make_forwarder_windows.py")
-    keys = os.path.abspath(args.keys or os.path.join(os.getcwd(), "prod.keys"))
+    keys = os.path.abspath(args.keys or os.path.join(os.path.expanduser("~"), ".switch", "prod.keys"))
     if not os.path.isfile(script):
         print("  skipped: make_forwarder_windows.py is not next to this script")
     elif not os.path.isfile(keys):
         print("  skipped: no prod.keys at " + keys + ". To also get the .nsp that puts an icon on the HOME screen, put",
-              "your console's prod.keys in the folder you run this from (or use --keys PATH), then run:",
-              "python make_forwarder_windows.py --sd build\sd", sep=" ")
+              "your console's prod.keys there (or use --keys PATH, outside the release folder), then run:",
+              'python make_forwarder_windows.py --sd "' + out + '"', sep=" ")
     elif subprocess.call([sys.executable, "-I", script, "--keys", keys, "--sd", out], cwd=ROOT) != 0:
         print("  WARNING: the forwarder was not built (see above); wwhd.nro and the SD folder are fine.", flush=True)
 
@@ -287,8 +296,8 @@ def main():
     ap.add_argument("--out", default=os.path.join(ROOT, "build", "sd"))
     ap.add_argument("--jobs", type=int)
     ap.add_argument("--reuse-translation", action="store_true")
-    ap.add_argument("--keys", help="your console's prod.keys, for the HOME-screen forwarder "
-                    "(default: prod.keys in the folder you run this from)")
+    ap.add_argument("--keys", help="your console's prod.keys, for the HOME-screen forwarder, outside the release "
+                    "folder (default: .switch\\prod.keys in your user folder)")
     ap.add_argument("--no-forwarder", action="store_true", help="do not build the HOME-screen forwarder (.nsp)")
     ap.add_argument("--strict", action="store_true", help="stop, not just warn, if the release is not a tested one")
     ap.add_argument("--print-hashes", action="store_true", help="print this release's file hashes and exit")
@@ -353,11 +362,15 @@ cd "$(cygpath -u "$WWHD_ROOT")"
 export DEVKITA64=$DEVKITPRO/devkitA64
 export PATH="$DEVKITPRO/tools/bin:$DEVKITA64/bin:$PATH"
 dir=build/switch-dk
-mkdir -p $dir/dksh
-cmake -S . -B $dir -G "Unix Makefiles" -DCMAKE_DEPENDS_USE_COMPILER=OFF \
-      -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DCMAKE_BUILD_TYPE=Release \
+# a build dir configured with Ninja (the release's container build) cannot be reused with another generator
+if grep -qs '^CMAKE_GENERATOR:INTERNAL=Ninja$' "$dir/CMakeCache.txt"; then
+    rm -rf "$dir/CMakeCache.txt" "$dir/CMakeFiles"
+fi
+mkdir -p "$dir/dksh"
+cmake -S . -B "$dir" -G "Unix Makefiles" -DCMAKE_DEPENDS_USE_COMPILER=OFF \
+      -DCMAKE_TOOLCHAIN_FILE="$DEVKITPRO/cmake/Switch.cmake" -DCMAKE_BUILD_TYPE=Release \
       -DWWHD_RENDERER=DEKO3D -DWWHD_DEKO3D_DEBUG_LIB=OFF
-cmake --build $dir -j $WWHD_JOBS
+cmake --build "$dir" -j $WWHD_JOBS
 '''
     run([DKP + "/msys2/usr/bin/bash.exe", "-l", "-c", script], env=env)
     nro = os.path.join(ROOT, "build", "switch-dk", "wwhd.nro")
