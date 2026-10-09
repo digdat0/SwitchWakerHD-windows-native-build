@@ -135,6 +135,7 @@ If `hacBrewPack` says `Key (...) must be 32 hex digits`, a key in your `prod.key
 | `keep prod.keys outside the release folder` | Move the file to `%USERPROFILE%\.switch\prod.keys` (or anywhere else outside the release folder) |
 | `unsafe file name in the archive` | The `.wua` contains a file name that would write outside the output folder. Do not use that archive |
 | `WARNING: the forwarder was not built` | Only the icon failed; `wwhd.nro` and `build\sd` are fine. Read the lines above it |
+| On the Switch: the game closes at once, and `wwhd.log` says `cannot load game/code/cking.rpx` (or another game file) | A file did not reach the SD card. Some copy tools skip files. Compare `switch\wwhd\game` on the card with `build\sd\switch\wwhd\game` (same size and file count), then copy again |
 | Something else | Run again and read the first error above `make_sd_windows: this step failed` |
 
 ## When the SwitchWakerHD release changes
