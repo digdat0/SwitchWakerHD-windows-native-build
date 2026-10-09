@@ -143,7 +143,7 @@ def main():
     print("[1/4] fetching nx-hbloader %s and hacBrewPack %s" % (HBLOADER[1][:7], HACBREWPACK[1][:7]), flush=True)
     fetch(hbl, *HBLOADER)
     fetch(hbp, *HACBREWPACK)
-    run(["git", "-C", hbl, "apply", os.path.join(fdir, "nx-hbloader-forwarder.patch")])
+    run(["git", "-C", hbl, "apply", "--ignore-whitespace", os.path.join(fdir, "nx-hbloader-forwarder.patch")])
 
     print("\n[2/4] building the loader and the packer", flush=True)
     with open(os.path.join(hbl, "hbl.json")) as f:
