@@ -38,7 +38,17 @@ Tested on Windows 10 with SwitchWakerHD v0.2.0 and v0.3.0.
 4. **Optional, for the HOME-screen icon** (see "HOME-screen icon" below): [Git](https://git-scm.com/download/win),
    `python -m pip install pillow`, and in the same devkitPro MSYS2 window `pacman -S gcc`.
 
-You need about 10 GB of free disk space and 8 GB of RAM or more.
+You need about 10 GB of free disk space and 8 GB of RAM or more. Where the space goes (measured on a v0.3.0 build):
+
+| | Size |
+|---|---|
+| devkitPro (the Switch toolchain) | 3 GB |
+| Temporary build files (`build\switch-dk`, `build\gen`) | 3.4 GB |
+| Your game, extracted (`build\sd-game`) | 1.7 GB |
+| The finished SD card folder (`build\sd`) | 1.8 GB |
+
+Only `build\sd` is needed after the build. Once it is on the SD card you can delete the rest of `build\` (about 5 GB).
+Your `.wua` or other game dump (about 1.4 GB) is separate.
 
 ## 2. Get the release and add the script
 
