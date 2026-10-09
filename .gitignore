@@ -8,3 +8,8 @@ build/
 *.rpx
 *.app
 sd-game/
+prod.keys
+dev.keys
+title.keys
+*.keys
+*.nsp

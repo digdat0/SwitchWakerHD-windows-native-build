@@ -35,14 +35,17 @@ Tested on Windows 10 with SwitchWakerHD v0.2.0 and v0.3.0.
    `switch-dev` brings devkitA64 and libnx. If devkitPro is installed somewhere else, set the environment variable
    `DEVKITPRO_WIN` to that folder (with forward slashes, e.g. `D:/devkitPro`).
 
+4. **Optional, for the HOME-screen icon** (see "HOME-screen icon" below): [Git](https://git-scm.com/download/win),
+   `python -m pip install pillow`, and in the same devkitPro MSYS2 window `pacman -S gcc`.
+
 You need about 10 GB of free disk space and 8 GB of RAM or more.
 
 ## 2. Get the release and add the script
 
 1. Download the zip from <https://github.com/centollOS/SwitchWakerHD> (Releases) and unzip it.
    You get a folder like `SwitchWakerHD-v0.2.0` containing `README.md` and `tools\`.
-2. Download `make_sd_windows.py` from this repo and **put it in that folder**, next to `README.md`.
-   Nothing in the release is modified.
+2. Download `make_sd_windows.py` and `make_forwarder_windows.py` from this repo and **put both in that folder**,
+   next to `README.md`. Nothing in the release is modified.
 
 ## 3. Build
 
@@ -81,6 +84,32 @@ Copy the **contents** of `build\sd\` to the root of the Switch's SD card, so the
 `sdmc:/switch/wwhd/wwhd.nro`. Hold **R** while starting any installed game to open the Homebrew Menu in title
 mode, then pick SwitchWakerHD. Controls and settings are in the release's own `INSTALL.md`.
 
+## HOME-screen icon (optional)
+
+The release can also make a small forwarder, `wwhd_forwarder.nsp`, that puts a "Wind Waker HD" icon on the Switch
+HOME screen and starts the game in title mode, so you do not have to hold R (the release's
+`tools\switch\forwarder\INSTALL.md` describes it). `make_forwarder_windows.py` is the Windows, no-Docker version of
+its build. `make_sd_windows.py` runs it **after the game has built**.
+
+- It needs **your own console's `prod.keys`** (dump them with Lockpick_RCM). Put the file named `prod.keys` in the
+  folder you run `make_sd_windows.py` from, or pass `--keys "D:\path\prod.keys"`. The keys are only read by path;
+  they are never copied, and the output is checked so that no key value is printed. Keep the file out of anything
+  you share: `.gitignore` here blocks `prod.keys`, `*.keys` and `*.nsp`.
+- **Without keys it is skipped** with a short note, and the game (`wwhd.nro`) is built as usual. `--no-forwarder`
+  skips it always.
+- It needs Git, Pillow and `gcc` in MSYS2 (setup step 4). It fetches `nx-hbloader` and `hacBrewPack` from GitHub at
+  fixed commits and compiles them.
+- With keys, the `.nsp` is also copied to `build\sd\NSP\`. Install it on the Switch with DBI (*Browse SD card*, the
+  `.nsp`, *Install*) or Goldleaf, and delete the file afterwards. It needs up-to-date Atmosphere sigpatches, and
+  `wwhd.nro` must stay at `sdmc:/switch/wwhd/wwhd.nro`.
+- Run it alone later with `python make_forwarder_windows.py --sd build\sd`.
+
+Status: the `.nsp` builds and is a valid container, but it has **not been verified with `hactool` and has not been
+tested on a console**. If you try it, please report what happens.
+
+If `hacBrewPack` says `Key (...) must be 32 hex digits`, a key in your `prod.keys` is not in the format it expects
+(some key dumps have longer `master_kek_source_*` entries). Use keys from a current Lockpick_RCM dump.
+
 ## Troubleshooting
 
 | | |
@@ -89,6 +118,8 @@ mode, then pick SwitchWakerHD. Controls and settings are in the release's own `I
 | `put this file in the unzipped SwitchWakerHD release folder` | The script must sit next to the release's `tools\` folder |
 | `not the expected file` / version error | The dump is not version 0 of the USA game, or the update was merged in |
 | The compile fails with out-of-memory errors | Run again with `--jobs 2` |
+| `skipped: no prod.keys at ...` | Normal without keys. See "HOME-screen icon" to add them |
+| `WARNING: the forwarder was not built` | Only the icon failed; `wwhd.nro` and `build\sd` are fine. Read the lines above it |
 | Something else | Run again and read the first error above `make_sd_windows: this step failed` |
 
 ## When the SwitchWakerHD release changes

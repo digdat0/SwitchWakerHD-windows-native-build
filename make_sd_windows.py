@@ -11,6 +11,9 @@ README.md and tools/) and run it from there. It changes nothing in the release.
 
 options: --out DIR            where the SD card folder goes (default build\\sd)
          --jobs N             parallel compiles (each can need ~1.5 GB of RAM; default: half the CPUs)
+         --keys PATH          your console's prod.keys, to also build the HOME-screen forwarder (.nsp);
+                              default: prod.keys in the folder you run this from; without it that step is skipped
+         --no-forwarder       never build the forwarder
          --strict             stop (not just warn) if the release is not one this script was tested with
          --reuse-translation  keep build\\gen from an earlier run instead of translating the game code again
 
@@ -258,6 +261,23 @@ def check_devkitpro():
              "run: pacman -S switch-dev deko3d uam switch-lz4 switch-zlib" % (DKP, ", ".join(missing)))
 
 
+def forwarder(args, out):
+    """Optional last step: the HOME-screen icon (.nsp). Never fails the build: the game does not need it."""
+    if args.no_forwarder:
+        return
+    print("\n[+] HOME-screen forwarder (optional)", flush=True)
+    script = os.path.join(ROOT, "make_forwarder_windows.py")
+    keys = os.path.abspath(args.keys or os.path.join(os.getcwd(), "prod.keys"))
+    if not os.path.isfile(script):
+        print("  skipped: make_forwarder_windows.py is not next to this script")
+    elif not os.path.isfile(keys):
+        print("  skipped: no prod.keys at " + keys + ". To also get the .nsp that puts an icon on the HOME screen, put",
+              "your console's prod.keys in the folder you run this from (or use --keys PATH), then run:",
+              "python make_forwarder_windows.py --sd build\sd", sep=" ")
+    elif subprocess.call([sys.executable, "-I", script, "--keys", keys, "--sd", out], cwd=ROOT) != 0:
+        print("  WARNING: the forwarder was not built (see above); wwhd.nro and the SD folder are fine.", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     src = ap.add_mutually_exclusive_group()
@@ -267,6 +287,9 @@ def main():
     ap.add_argument("--out", default=os.path.join(ROOT, "build", "sd"))
     ap.add_argument("--jobs", type=int)
     ap.add_argument("--reuse-translation", action="store_true")
+    ap.add_argument("--keys", help="your console's prod.keys, for the HOME-screen forwarder "
+                    "(default: prod.keys in the folder you run this from)")
+    ap.add_argument("--no-forwarder", action="store_true", help="do not build the HOME-screen forwarder (.nsp)")
     ap.add_argument("--strict", action="store_true", help="stop, not just warn, if the release is not a tested one")
     ap.add_argument("--print-hashes", action="store_true", help="print this release's file hashes and exit")
     args = ap.parse_args()
@@ -351,6 +374,7 @@ cmake --build $dir -j $WWHD_JOBS
         shutil.rmtree(gdst, ignore_errors=True)
         for part in ("code", "content", "meta"):
             shutil.copytree(os.path.join(game, part), os.path.join(gdst, part))
+    forwarder(args, out)
     print("""
 Done: %s
 
