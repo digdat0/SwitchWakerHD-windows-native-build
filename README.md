@@ -17,6 +17,10 @@ What gets built contains the game, so it is for your own console only. Do not sh
 
 Tested on Windows 10 with SwitchWakerHD v0.2.0 and v0.3.0.
 
+**SwitchWakerHD v0.4.3 and newer** build natively by themselves. For those there are two more tools here: a
+window that builds and updates with one button, and `make_sd_cached.py`, which makes a new release build in a few
+minutes instead of half an hour. See [Faster updates and a window](#faster-updates-and-a-window-v043-and-newer).
+
 ## 1. One-time setup
 
 1. **Python 3** from [python.org](https://www.python.org/downloads/) (tick *Add python.exe to PATH*), then in a
@@ -87,6 +91,44 @@ build\sd\switch\wwhd\
 ├── wwhd.nro     the game
 └── game\        your game's files
 ```
+
+## Faster updates and a window (v0.4.3 and newer)
+
+Without a cache every new release is a full build: the release is unzipped into a new folder, so the game is
+extracted again, its code translated again and every file compiled again (about 27 minutes on a 12-thread PC).
+Most of that does not change between releases. `make_sd_cached.py` keeps it in a cache outside the release folders,
+`%LOCALAPPDATA%\SwitchWakerHD`:
+
+| step | first build | next release |
+|---|---|---|
+| extract the game | once | reused (keyed on the dump's name, size and date) |
+| translate the game code (~4½ min) | once | reused while `cking.rpx`, `tools\recomp\` and `tools\rpx.py` are the same |
+| compile (~18 min) | fills the [ccache](https://ccache.dev) | only what changed is compiled (376 of 382 files came from the cache in a test) |
+| SD card folder | copied | only the changed files are copied |
+
+Measured: 27 minutes for the first build, **3.1 minutes** for the same game in a fresh release folder. A release
+that changes the translator or a header the game code includes still recompiles what that change touches.
+
+**Setup:** put `make_sd_cached.py`, `switch_builder.py` and `Build for Switch.bat` in the release folder, next to
+`README.md`, and in the devkitPro MSYS2 window also run `pacman -S ccache` (the window can install it for you).
+
+**The window:** double-click `Build for Switch.bat`. Pick your game (`.wua`, `.wux`/`.wud` or an extracted folder)
+and where it goes (your SD card, e.g. `E:\`, writes `switch\wwhd\` there directly; or any folder), tick the
+HOME-screen icon if you have keys, and press **Build / Update**. It checks what the build needs first (devkitPro,
+the Switch packages, ccache, the Python modules) and offers to install what is missing. It checks `prod.keys` before
+building and names the damaged entries instead of failing in `hacBrewPack`. Your choices are remembered in the cache
+folder, so after downloading a new release you only copy the three files into it and press the button again.
+
+**Without the window:**
+
+```
+python make_sd_cached.py --wua "C:\path\to\The Legend of Zelda - The Wind Waker HD (US).wua" --out E:\
+```
+
+It takes the release's `make_sd.py` options, plus `--cache DIR` (another cache folder) and `--no-ccache`. The first
+build with the cache is a full one (it fills the cache); a `build\switch-dk` made without ccache is rebuilt once for
+that. Deleting the cache folder is always safe: the next build is then a full one. It holds your game (about 2 GB,
+plus ~300 MB per translated version and the compiler cache), so like `build\` it is for your own computer only.
 
 ## 4. Play
 
