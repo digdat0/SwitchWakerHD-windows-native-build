@@ -79,7 +79,8 @@ def checks():
     return out
 
 
-LONG_KEYS = re.compile(r"rsa", re.I)  # RSA keys are longer than the 16/32-byte AES keys: not checked
+# not 16/32-byte AES keys, so longer: RSA keys and keyblobs (0x90 bytes, encrypted 0xB0): not checked
+LONG_KEYS = re.compile(r"rsa|keyblob", re.I)
 
 
 def check_keys(path):
